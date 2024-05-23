@@ -81,27 +81,10 @@ class App {
 						pickResult.pickedMesh.uniqueId
 					);
 
-					if (self.currentFurnitureObject) {
-						if (
-							!self.currentFurnitureObject.equals(
-								pickedFurnitureObject
-							)
-						) {
-							self.currentFurnitureObject.deselected();
-
-							self.currentFurnitureObject = pickedFurnitureObject;
-							self.currentFurnitureObject.selected();
-						}
-					} else {
-						self.currentFurnitureObject = pickedFurnitureObject;
-						self.currentFurnitureObject.selected();
-					}
+					self.selectFurniture(pickedFurnitureObject);
 				}
 			} else if (self.currentFurnitureObject != null) {
-				if (self.currentFurnitureObject) {
-					self.currentFurnitureObject.deselected();
-					self.currentFurnitureObject = null;
-				}
+				self.deselectFurniture();
 			}
 		};
 
@@ -130,13 +113,35 @@ class App {
 					this.meshObjectMap.set(mesh.uniqueId, loadedFurniture);
 				});
 
-				console.log(this.meshObjectMap);
 				if (onLoaded) {
 					onLoaded(loadedFurniture);
 				}
 				this.furnitureObjects.push(newFurnitureObject);
 			}
 		);
+	}
+
+	selectFurniture(furnitureObject: FurnitureObject) {
+		if (furnitureObject) {
+			if (this.currentFurnitureObject) {
+				if (!this.currentFurnitureObject.equals(furnitureObject)) {
+					this.currentFurnitureObject.deselected();
+				}
+			}
+
+			this.currentFurnitureObject = furnitureObject;
+			this.currentFurnitureObject.selected();
+
+			this.header.innerText = this.currentFurnitureObject.meshes[0].name;
+		}
+	}
+
+	deselectFurniture() {
+		if (this.currentFurnitureObject != null) {
+			this.currentFurnitureObject.deselected();
+			this.currentFurnitureObject = null;
+			this.header.innerText = "";
+		}
 	}
 }
 

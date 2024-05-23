@@ -13,6 +13,7 @@ export class FurnitureObject {
 		//@todo add a callback for failing
 		SceneLoader.ImportMesh(null, "./", filename, scene, function (meshes) {
 			self.meshes = meshes;
+			self.meshes[0].name = filename;
 
 			if (onLoaded) {
 				onLoaded(self);
