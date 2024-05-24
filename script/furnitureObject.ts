@@ -1,4 +1,13 @@
-import { AbstractMesh, Scene, SceneLoader, Vector3 } from "@babylonjs/core";
+import {
+	AbstractMesh,
+	Scene,
+	SceneLoader,
+	StandardMaterial,
+	Texture,
+	Vector3,
+	VertexBuffer,
+	VertexData,
+} from "@babylonjs/core";
 import { velocityPixelShader } from "@babylonjs/core/Shaders/velocity.fragment";
 
 export class FurnitureObject {
@@ -19,9 +28,12 @@ export class FurnitureObject {
 	) {
 		var self = this;
 		//@todo add a callback for failing
-		SceneLoader.ImportMesh(null, "./", filename, scene, function (meshes) {
+		SceneLoader.ImportMesh("", "./", filename, scene, function (meshes) {
 			self.meshes = meshes;
 			self.name = filename;
+
+			self.setMaterial("texture/default.png", scene);
+
 			if (onLoaded) {
 				onLoaded(self);
 			}
@@ -44,18 +56,36 @@ export class FurnitureObject {
 	loop(dt: number) {}
 
 	selected() {
-		console.log("Selected", this.meshes[0].name);
+		console.log("Selected", this.name);
 		this.meshes.forEach((mesh) => {
-			mesh.locallyTranslate(new Vector3(0, 0.3, 0));
+			mesh.enableEdgesRendering();
 		});
 	}
 
 	deselected() {
-		console.log("Deselected", this.meshes[0].name);
+		console.log("Deselected", this.name);
 		this.meshes.forEach((mesh) => {
-			mesh.locallyTranslate(new Vector3(0, -0.3, 0));
+			mesh.disableEdgesRendering();
 		});
 	}
+
+	extend() {
+		this.meshes.forEach((mesh) => {
+			mesh.scaling = new Vector3(2, 1, 1);
+		});
+	}
+
+	setMaterial(filename: string, scene: Scene) {
+		let material = new StandardMaterial("FurnitureMaterial", scene);
+		material.diffuseTexture = new Texture(filename, scene);
+		material.emissiveTexture = new Texture(filename, scene);
+
+		this.meshes.forEach((mesh) => {
+			mesh.material = material;
+		});
+	}
+
+	setShader() {}
 
 	locallyTranslate(vector3: Vector3) {
 		this.meshes.forEach((mesh) => {

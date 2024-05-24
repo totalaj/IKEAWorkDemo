@@ -23,37 +23,19 @@ class App {
 
 	private currentFurnitureObject: FurnitureObject;
 
+	private canvas: HTMLCanvasElement;
 	private header: HTMLElement;
 	private inspector: HTMLDivElement;
 	private extendButton: HTMLButtonElement;
+	private textureSelector: HTMLSelectElement;
 
 	constructor() {
 		let self = this;
 
-		// create the canvas html element and attach it to the webpage
-		var canvas = document.createElement("canvas");
-		canvas.style.width = "100%";
-		canvas.style.height = "100%";
-		canvas.id = "renderCanvas";
-		document.body.appendChild(canvas);
-
-		this.header = document.createElement("h1");
-		this.header.innerText = "Text";
-		document.body.append(this.header);
-
-		this.inspector = document.createElement("div");
-		document.body.append(this.inspector);
-
-		this.extendButton = document.createElement("button");
-		this.extendButton.textContent = "Extend";
-		this.extendButton.addEventListener("click", () => {
-			self.extendCurrentFurniture();
-		});
-
-		this.inspector.append(this.extendButton);
+		self.initializeHTML();
 
 		// initialize babylon scene and engine
-		this.engine = new Engine(canvas, true);
+		this.engine = new Engine(this.canvas, true);
 		this.scene = new Scene(this.engine);
 
 		var camera: ArcRotateCamera = new ArcRotateCamera(
@@ -64,7 +46,7 @@ class App {
 			Vector3.Zero(),
 			this.scene
 		);
-		camera.attachControl(canvas, true);
+		camera.attachControl(this.canvas, true);
 
 		var light1: HemisphericLight = new HemisphericLight(
 			"light1",
@@ -114,6 +96,60 @@ class App {
 		});
 	}
 
+	initializeHTML() {
+		// create the canvas html element and attach it to the webpage
+		this.canvas = document.createElement("canvas");
+		this.canvas.style.width = "100%";
+		this.canvas.style.height = "100%";
+		this.canvas.id = "renderCanvas";
+		document.body.appendChild(this.canvas);
+
+		// Create title
+		this.header = document.createElement("h1");
+		this.header.innerText = "Text";
+		document.body.append(this.header);
+
+		// Initialize inspector and all controls
+		this.inspector = document.createElement("div");
+		document.body.append(this.inspector);
+
+		// Extension button
+		this.extendButton = document.createElement("button");
+		this.extendButton.textContent = "Extend";
+		this.extendButton.addEventListener("click", () => {
+			this.extendCurrentFurniture();
+		});
+
+		this.inspector.append(this.extendButton);
+
+		this.textureSelector = document.createElement("select");
+		let opt = document.createElement("option");
+		opt.value = "texture/default.png";
+		opt.innerHTML = "Default";
+		this.textureSelector.appendChild(opt);
+		opt = document.createElement("option");
+		opt.value = "texture/green.png";
+		opt.innerHTML = "Green";
+		this.textureSelector.appendChild(opt);
+		opt = document.createElement("option");
+		opt.value = "texture/checkers.png";
+		opt.innerHTML = "Checkerboard";
+		this.textureSelector.appendChild(opt);
+		this.textureSelector.addEventListener("change", () => {
+			console.log(this.currentFurnitureObject);
+			if (this.currentFurnitureObject) {
+				this.currentFurnitureObject.setMaterial(
+					this.textureSelector.options[
+						this.textureSelector.selectedIndex
+					].value,
+					this.scene
+				);
+			}
+		});
+
+		this.inspector.append(this.textureSelector);
+	}
+
 	addNewFurniture(
 		filename: string,
 		onLoaded?: (loadedObject: FurnitureObject) => void
@@ -160,7 +196,10 @@ class App {
 	}
 
 	extendCurrentFurniture() {
-		console.log("Extend", this.currentFurnitureObject.name);
+		if (this.currentFurnitureObject) {
+			this.currentFurnitureObject.extend();
+			console.log("Extend", this.currentFurnitureObject.name);
+		}
 	}
 }
 
