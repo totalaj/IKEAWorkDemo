@@ -4,13 +4,28 @@ import {
 	SceneLoader,
 	StandardMaterial,
 	Texture,
+	Vector,
 	Vector3,
 	VertexBuffer,
 	VertexData,
 } from "@babylonjs/core";
 import { velocityPixelShader } from "@babylonjs/core/Shaders/velocity.fragment";
 
+export class FurnitureObjectDescriptor {
+	public meshPath: string;
+	public name: string;
+
+	// Add more info about furniture object here (bounds, scale, many other things potentially)
+
+	constructor(meshPath: string, name: string) {
+		this.meshPath = meshPath;
+		this.name = name;
+	}
+}
+
 export class FurnitureObject {
+	//#region Properties
+
 	private _meshes: AbstractMesh[];
 	public get meshes(): AbstractMesh[] {
 		return this._meshes;
@@ -19,25 +34,38 @@ export class FurnitureObject {
 		this._meshes = value;
 	}
 
-	public name: string;
+	private _descriptor: FurnitureObjectDescriptor;
+	public get descriptor(): FurnitureObjectDescriptor {
+		return this._descriptor;
+	}
+	private set descriptor(value: FurnitureObjectDescriptor) {
+		this._descriptor = value;
+	}
+	//#endregion
 
 	constructor(
-		filename: string,
+		descriptor: FurnitureObjectDescriptor,
 		scene: Scene,
 		onLoaded?: (loadedObject: FurnitureObject) => void
 	) {
 		var self = this;
 		//@todo add a callback for failing
-		SceneLoader.ImportMesh("", "./", filename, scene, function (meshes) {
-			self.meshes = meshes;
-			self.name = filename;
+		SceneLoader.ImportMesh(
+			"",
+			"./",
+			descriptor.meshPath,
+			scene,
+			function (meshes) {
+				self.meshes = meshes;
+				self.descriptor = descriptor;
 
-			self.setMaterial("texture/default.png", scene);
+				self.setMaterial("texture/default.png", scene);
 
-			if (onLoaded) {
-				onLoaded(self);
+				if (onLoaded) {
+					onLoaded(self);
+				}
 			}
-		});
+		);
 	}
 
 	equals(other: FurnitureObject): boolean {
@@ -56,14 +84,14 @@ export class FurnitureObject {
 	loop(dt: number) {}
 
 	selected() {
-		console.log("Selected", this.name);
+		console.log("Selected", this.descriptor.name);
 		this.meshes.forEach((mesh) => {
 			mesh.enableEdgesRendering();
 		});
 	}
 
 	deselected() {
-		console.log("Deselected", this.name);
+		console.log("Deselected", this.descriptor.name);
 		this.meshes.forEach((mesh) => {
 			mesh.disableEdgesRendering();
 		});
@@ -95,8 +123,16 @@ export class FurnitureObject {
 
 	setPosition(position: Vector3) {
 		this.meshes.forEach((mesh) => {
-			mesh.position = position;
+			mesh.setPositionWithLocalVector(position);
 		});
+	}
+
+	getPosition(): Vector3 {
+		if (this.meshes.length > 0) {
+			return this.meshes[0].position;
+		} else {
+			return Vector3.Zero();
+		}
 	}
 
 	setRotation(rotation: Vector3) {

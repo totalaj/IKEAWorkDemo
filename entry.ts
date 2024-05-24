@@ -12,9 +12,13 @@ import {
 	SceneLoader,
 	AbstractMesh,
 } from "@babylonjs/core";
-import { FurnitureObject } from "./script/furnitureObject";
+import {
+	FurnitureObject,
+	FurnitureObjectDescriptor,
+} from "./script/furnitureObject";
 
 class App {
+	//#region Variables
 	private scene: Scene;
 	private engine: Engine;
 
@@ -23,29 +27,42 @@ class App {
 
 	private currentFurnitureObject: FurnitureObject;
 
+	// Html elements
 	private canvas: HTMLCanvasElement;
 	private header: HTMLElement;
 	private inspector: HTMLDivElement;
 	private extendButton: HTMLButtonElement;
 	private textureSelector: HTMLSelectElement;
+	private xInput: HTMLInputElement;
+	private yInput: HTMLInputElement;
+	private zInput: HTMLInputElement;
+
+	// I wanted to load these from files, but I had some difficulties. Just pretend these were loaded from files
+	private chairDescriptor: FurnitureObjectDescriptor =
+		new FurnitureObjectDescriptor("models/chair/chair.glb", "Chair");
+	private shelfDescriptor: FurnitureObjectDescriptor =
+		new FurnitureObjectDescriptor("models/shelf/shelf.glb", "Shelf");
+
+	//#endregion
 
 	constructor() {
-		let self = this;
+		let self = this; // Not sure if self is needed, should look more into the this-pointer in callbacks
 
-		self.initializeHTML();
+		this.initializeHTML();
 
-		// initialize babylon scene and engine
+		// Initialize babylon scene and engine
 		this.engine = new Engine(this.canvas, true);
 		this.scene = new Scene(this.engine);
 
 		var camera: ArcRotateCamera = new ArcRotateCamera(
 			"Camera",
+			0,
 			Math.PI / 2,
-			Math.PI / 2,
-			2,
+			10,
 			Vector3.Zero(),
 			this.scene
 		);
+
 		camera.attachControl(this.canvas, true);
 
 		var light1: HemisphericLight = new HemisphericLight(
@@ -55,38 +72,30 @@ class App {
 		);
 
 		// Add testing furniture
-		this.addNewFurniture("models/chair/chair.glb");
-		this.addNewFurniture("models/chair/chair.glb", (loadedObject) => {
+		this.addNewFurniture(this.chairDescriptor);
+		this.addNewFurniture(this.chairDescriptor, (loadedObject) => {
 			loadedObject.setPosition(new Vector3(0, 0, 4));
 		});
-		this.addNewFurniture("models/shelf/shelf.glb", (loadedObject) => {
+		this.addNewFurniture(this.shelfDescriptor, (loadedObject) => {
 			loadedObject.setPosition(new Vector3(0, 7, -2));
 		});
-		this.addNewFurniture("models/shelf/shelf.glb", (loadedObject) => {
+		this.addNewFurniture(this.shelfDescriptor, (loadedObject) => {
 			loadedObject.setPosition(new Vector3(0, 7, 0));
 		});
-		this.addNewFurniture("models/shelf/shelf.glb", (loadedObject) => {
+		this.addNewFurniture(this.shelfDescriptor, (loadedObject) => {
 			loadedObject.setPosition(new Vector3(0, 7, 2));
 		});
 
+		// Bind pick function
 		this.scene.onPointerDown = function (evt, pickResult) {
-			if (pickResult.hit) {
-				if (self.meshObjectMap.has(pickResult.pickedMesh.uniqueId)) {
-					let pickedFurnitureObject = self.meshObjectMap.get(
-						pickResult.pickedMesh.uniqueId
-					);
-
-					self.selectFurniture(pickedFurnitureObject);
-				}
-			} else if (self.currentFurnitureObject != null) {
-				self.deselectFurniture();
-			}
+			self.processPickResult(pickResult);
 		};
 
-		// run the main render loop
+		// Render loop
 		this.engine.runRenderLoop(() => {
 			this.scene.render();
 
+			// calculate delta-time in seconds and tick all furniture objects
 			let dt = this.scene.deltaTime / 1000;
 			dt = !Number.isNaN(dt) ? dt : 0;
 
@@ -96,7 +105,24 @@ class App {
 		});
 	}
 
+	private processPickResult(pickResult) {
+		if (pickResult.hit) {
+			if (this.meshObjectMap.has(pickResult.pickedMesh.uniqueId)) {
+				let pickedFurnitureObject = this.meshObjectMap.get(
+					pickResult.pickedMesh.uniqueId
+				);
+
+				this.selectFurniture(pickedFurnitureObject);
+			}
+		} else if (this.currentFurnitureObject != null) {
+			this.deselectFurniture();
+		}
+	}
+
 	initializeHTML() {
+		let self = this;
+		// This should all be able to be defined in HTML
+
 		// create the canvas html element and attach it to the webpage
 		this.canvas = document.createElement("canvas");
 		this.canvas.style.width = "100%";
@@ -111,6 +137,7 @@ class App {
 
 		// Initialize inspector and all controls
 		this.inspector = document.createElement("div");
+		this.inspector.hidden = true;
 		document.body.append(this.inspector);
 
 		// Extension button
@@ -148,14 +175,45 @@ class App {
 		});
 
 		this.inspector.append(this.textureSelector);
+		this.inspector.append(document.createElement("br"));
+
+		let xText = document.createElement("label");
+		xText.innerText = "X:";
+		let yText = document.createElement("label");
+		yText.innerText = "Y:";
+		let zText = document.createElement("label");
+		zText.innerText = "Z:";
+
+		let onPositionInput = function () {
+			self.updatePositionFromInput();
+		};
+
+		this.xInput = document.createElement("input");
+		this.xInput.type = "number";
+		this.xInput.oninput = onPositionInput;
+
+		this.yInput = document.createElement("input");
+		this.yInput.type = "number";
+		this.yInput.oninput = onPositionInput;
+
+		this.zInput = document.createElement("input");
+		this.zInput.type = "number";
+		this.zInput.oninput = onPositionInput;
+
+		this.inspector.append(xText);
+		this.inspector.append(this.xInput);
+		this.inspector.append(yText);
+		this.inspector.append(this.yInput);
+		this.inspector.append(zText);
+		this.inspector.append(this.zInput);
 	}
 
 	addNewFurniture(
-		filename: string,
+		descriptor: FurnitureObjectDescriptor,
 		onLoaded?: (loadedObject: FurnitureObject) => void
 	) {
 		var newFurnitureObject: FurnitureObject = new FurnitureObject(
-			filename,
+			descriptor,
 			this.scene,
 			(loadedFurniture) => {
 				loadedFurniture.meshes.forEach((mesh) => {
@@ -183,7 +241,14 @@ class App {
 			this.currentFurnitureObject = furnitureObject;
 			this.currentFurnitureObject.selected();
 
-			this.header.innerText = this.currentFurnitureObject.name;
+			this.header.innerText = this.currentFurnitureObject.descriptor.name;
+			this.inspector.hidden = false;
+			this.xInput.valueAsNumber =
+				this.currentFurnitureObject.getPosition().x;
+			this.yInput.valueAsNumber =
+				this.currentFurnitureObject.getPosition().y;
+			this.zInput.valueAsNumber =
+				this.currentFurnitureObject.getPosition().z;
 		}
 	}
 
@@ -192,13 +257,27 @@ class App {
 			this.currentFurnitureObject.deselected();
 			this.currentFurnitureObject = null;
 			this.header.innerText = "";
+			this.inspector.hidden = true;
 		}
 	}
 
 	extendCurrentFurniture() {
 		if (this.currentFurnitureObject) {
 			this.currentFurnitureObject.extend();
-			console.log("Extend", this.currentFurnitureObject.name);
+			console.log("Extend", this.currentFurnitureObject.descriptor.name);
+		}
+	}
+
+	updatePositionFromInput() {
+		console.log("Help", this);
+		if (this.currentFurnitureObject) {
+			this.currentFurnitureObject.setPosition(
+				new Vector3(
+					this.xInput.valueAsNumber ? this.xInput.valueAsNumber : 0,
+					this.yInput.valueAsNumber ? this.yInput.valueAsNumber : 0,
+					this.zInput.valueAsNumber ? this.zInput.valueAsNumber : 0
+				)
+			);
 		}
 	}
 }
