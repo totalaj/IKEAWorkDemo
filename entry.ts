@@ -190,8 +190,9 @@ class App {
 		opt.value = "texture/checkers.png";
 		opt.innerHTML = "Checkerboard";
 		this.textureSelector.appendChild(opt);
+
+		// When new option is selected, set the material in the current furniture object from the value as defined above
 		this.textureSelector.addEventListener("change", () => {
-			console.log(this.currentFurnitureObject);
 			if (this.currentFurnitureObject) {
 				this.currentFurnitureObject.setMaterial(
 					this.textureSelector.options[
@@ -291,18 +292,16 @@ class App {
 	}
 
 	extendCurrentFurniture() {
-		if (this.currentFurnitureObject) {
-			this.currentFurnitureObject.extend();
-		}
+		this.currentFurnitureObject?.extend();
 	}
 
 	updatePositionFromInput() {
 		if (this.currentFurnitureObject) {
 			this.currentFurnitureObject.setPosition(
 				new Vector3(
-					this.xInput.valueAsNumber ? this.xInput.valueAsNumber : 0,
-					this.yInput.valueAsNumber ? this.yInput.valueAsNumber : 0,
-					this.zInput.valueAsNumber ? this.zInput.valueAsNumber : 0
+					this.xInput.valueAsNumber ?? 0,
+					this.yInput.valueAsNumber ?? 0,
+					this.zInput.valueAsNumber ?? 0
 				)
 			);
 		}

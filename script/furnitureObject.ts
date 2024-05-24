@@ -83,14 +83,12 @@ export class FurnitureObject {
 	loop(dt: number) {}
 
 	selected() {
-		console.log("Selected", this.descriptor.name);
 		this.meshes.forEach((mesh) => {
 			mesh.enableEdgesRendering();
 		});
 	}
 
 	deselected() {
-		console.log("Deselected", this.descriptor.name);
 		this.meshes.forEach((mesh) => {
 			mesh.disableEdgesRendering();
 		});
