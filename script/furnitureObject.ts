@@ -4,13 +4,10 @@ import {
 	SceneLoader,
 	StandardMaterial,
 	Texture,
-	Vector,
 	Vector3,
-	VertexBuffer,
-	VertexData,
 } from "@babylonjs/core";
-import { velocityPixelShader } from "@babylonjs/core/Shaders/velocity.fragment";
 
+// Describes features of a mesh to be loaded
 export class FurnitureObjectDescriptor {
 	public meshPath: string;
 	public name: string;
@@ -23,6 +20,7 @@ export class FurnitureObjectDescriptor {
 	}
 }
 
+// Represents a loaded mesh
 export class FurnitureObject {
 	//#region Properties
 
@@ -50,6 +48,7 @@ export class FurnitureObject {
 	) {
 		var self = this;
 		//@todo add a callback for failing
+		//also use fs to check if file actually exists
 		SceneLoader.ImportMesh(
 			"",
 			"./",
@@ -98,12 +97,14 @@ export class FurnitureObject {
 	}
 
 	extend() {
+		//  @todo, Load meshes as updatable and modify vertex data. This isn't what we want to do, plus it causes problems with positions somehow
 		this.meshes.forEach((mesh) => {
 			mesh.scaling = new Vector3(2, 1, 1);
 		});
 	}
 
 	setMaterial(filename: string, scene: Scene) {
+		// Yeah use fs to check if file exists, or at least use some kind of error checking here
 		let material = new StandardMaterial("FurnitureMaterial", scene);
 		material.diffuseTexture = new Texture(filename, scene);
 		material.emissiveTexture = new Texture(filename, scene);
@@ -113,7 +114,9 @@ export class FurnitureObject {
 		});
 	}
 
-	setShader() {}
+	setShader() {
+		// throw new NotImplementedExeption();
+	}
 
 	locallyTranslate(vector3: Vector3) {
 		this.meshes.forEach((mesh) => {

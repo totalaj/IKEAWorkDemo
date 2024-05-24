@@ -11,6 +11,8 @@ import {
 	MeshBuilder,
 	SceneLoader,
 	AbstractMesh,
+	PointLight,
+	Color3,
 } from "@babylonjs/core";
 import {
 	FurnitureObject,
@@ -56,13 +58,13 @@ class App {
 
 		var camera: ArcRotateCamera = new ArcRotateCamera(
 			"Camera",
-			0,
+			Math.PI,
 			Math.PI / 2,
 			10,
 			Vector3.Zero(),
 			this.scene
 		);
-
+		// Make camera recieve input from the render canvas
 		camera.attachControl(this.canvas, true);
 
 		var light1: HemisphericLight = new HemisphericLight(
@@ -71,19 +73,35 @@ class App {
 			this.scene
 		);
 
+		light1.groundColor = new Color3(1, 0.8, 0.8);
+
+		var light2: PointLight = new PointLight(
+			"light2",
+			new Vector3(10, 0, 0),
+			this.scene
+		);
+
+		MeshBuilder.CreateGround("ground", {
+			width: 30,
+			height: 30,
+		}).setAbsolutePosition(new Vector3(0, -1, 0));
+
 		// Add testing furniture
-		this.addNewFurniture(this.chairDescriptor);
+		// This is ideally done by user, when such controls are implemented
+		this.addNewFurniture(this.chairDescriptor, (loadedObject) => {
+			loadedObject.setPosition(new Vector3(0, 0, 0));
+		});
 		this.addNewFurniture(this.chairDescriptor, (loadedObject) => {
 			loadedObject.setPosition(new Vector3(0, 0, 4));
 		});
 		this.addNewFurniture(this.shelfDescriptor, (loadedObject) => {
-			loadedObject.setPosition(new Vector3(0, 7, -2));
+			loadedObject.setPosition(new Vector3(0, 4, -1));
 		});
 		this.addNewFurniture(this.shelfDescriptor, (loadedObject) => {
-			loadedObject.setPosition(new Vector3(0, 7, 0));
+			loadedObject.setPosition(new Vector3(0, 4, 0));
 		});
 		this.addNewFurniture(this.shelfDescriptor, (loadedObject) => {
-			loadedObject.setPosition(new Vector3(0, 7, 2));
+			loadedObject.setPosition(new Vector3(0, 4, 1));
 		});
 
 		// Bind pick function
@@ -107,15 +125,19 @@ class App {
 
 	private processPickResult(pickResult) {
 		if (pickResult.hit) {
+			// If hit something, and that object exists in our map, select it
 			if (this.meshObjectMap.has(pickResult.pickedMesh.uniqueId)) {
 				let pickedFurnitureObject = this.meshObjectMap.get(
 					pickResult.pickedMesh.uniqueId
 				);
 
-				this.selectFurniture(pickedFurnitureObject);
+				this.selectNewFurniture(pickedFurnitureObject);
+				return; // Early return ensures deselect unless new selection happens
 			}
-		} else if (this.currentFurnitureObject != null) {
-			this.deselectFurniture();
+		}
+
+		if (this.currentFurnitureObject != null) {
+			this.deselectCurrentFurniture();
 		}
 	}
 
@@ -148,6 +170,12 @@ class App {
 		});
 
 		this.inspector.append(this.extendButton);
+
+		this.inspector.append(document.createElement("br"));
+
+		let colorLabel = document.createElement("label");
+		colorLabel.innerText = "Color:";
+		this.inspector.appendChild(colorLabel);
 
 		this.textureSelector = document.createElement("select");
 		let opt = document.createElement("option");
@@ -208,6 +236,7 @@ class App {
 		this.inspector.append(this.zInput);
 	}
 
+	// New furniture is created and registered in a unique-id to FurnitureObject map for fetching from a mesh
 	addNewFurniture(
 		descriptor: FurnitureObjectDescriptor,
 		onLoaded?: (loadedObject: FurnitureObject) => void
@@ -228,7 +257,7 @@ class App {
 		);
 	}
 
-	selectFurniture(furnitureObject: FurnitureObject) {
+	selectNewFurniture(furnitureObject: FurnitureObject) {
 		if (furnitureObject) {
 			if (this.currentFurnitureObject) {
 				if (!this.currentFurnitureObject.equals(furnitureObject)) {
@@ -252,7 +281,7 @@ class App {
 		}
 	}
 
-	deselectFurniture() {
+	deselectCurrentFurniture() {
 		if (this.currentFurnitureObject != null) {
 			this.currentFurnitureObject.deselected();
 			this.currentFurnitureObject = null;
@@ -264,12 +293,10 @@ class App {
 	extendCurrentFurniture() {
 		if (this.currentFurnitureObject) {
 			this.currentFurnitureObject.extend();
-			console.log("Extend", this.currentFurnitureObject.descriptor.name);
 		}
 	}
 
 	updatePositionFromInput() {
-		console.log("Help", this);
 		if (this.currentFurnitureObject) {
 			this.currentFurnitureObject.setPosition(
 				new Vector3(
