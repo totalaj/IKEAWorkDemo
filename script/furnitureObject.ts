@@ -2,7 +2,15 @@ import { AbstractMesh, Scene, SceneLoader, Vector3 } from "@babylonjs/core";
 import { velocityPixelShader } from "@babylonjs/core/Shaders/velocity.fragment";
 
 export class FurnitureObject {
-	public meshes: AbstractMesh[];
+	private _meshes: AbstractMesh[];
+	public get meshes(): AbstractMesh[] {
+		return this._meshes;
+	}
+	private set meshes(value: AbstractMesh[]) {
+		this._meshes = value;
+	}
+
+	public name: string;
 
 	constructor(
 		filename: string,
@@ -13,8 +21,7 @@ export class FurnitureObject {
 		//@todo add a callback for failing
 		SceneLoader.ImportMesh(null, "./", filename, scene, function (meshes) {
 			self.meshes = meshes;
-			self.meshes[0].name = filename;
-
+			self.name = filename;
 			if (onLoaded) {
 				onLoaded(self);
 			}

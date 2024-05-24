@@ -24,6 +24,8 @@ class App {
 	private currentFurnitureObject: FurnitureObject;
 
 	private header: HTMLElement;
+	private inspector: HTMLDivElement;
+	private extendButton: HTMLButtonElement;
 
 	constructor() {
 		let self = this;
@@ -38,6 +40,17 @@ class App {
 		this.header = document.createElement("h1");
 		this.header.innerText = "Text";
 		document.body.append(this.header);
+
+		this.inspector = document.createElement("div");
+		document.body.append(this.inspector);
+
+		this.extendButton = document.createElement("button");
+		this.extendButton.textContent = "Extend";
+		this.extendButton.addEventListener("click", () => {
+			self.extendCurrentFurniture();
+		});
+
+		this.inspector.append(this.extendButton);
 
 		// initialize babylon scene and engine
 		this.engine = new Engine(canvas, true);
@@ -126,13 +139,15 @@ class App {
 			if (this.currentFurnitureObject) {
 				if (!this.currentFurnitureObject.equals(furnitureObject)) {
 					this.currentFurnitureObject.deselected();
+				} else {
+					return;
 				}
 			}
 
 			this.currentFurnitureObject = furnitureObject;
 			this.currentFurnitureObject.selected();
 
-			this.header.innerText = this.currentFurnitureObject.meshes[0].name;
+			this.header.innerText = this.currentFurnitureObject.name;
 		}
 	}
 
@@ -142,6 +157,10 @@ class App {
 			this.currentFurnitureObject = null;
 			this.header.innerText = "";
 		}
+	}
+
+	extendCurrentFurniture() {
+		console.log("Extend", this.currentFurnitureObject.name);
 	}
 }
 
